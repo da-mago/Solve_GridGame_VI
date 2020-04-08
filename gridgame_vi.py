@@ -1,37 +1,64 @@
 import numpy as np
 import copy
 
-''' This code uses the MDP framework to model the problem. Once this is done,
-    any available RL algorithm will do the task (find the optimal solution).
-    Specifically, this code implements 'Value Iteration' algorithm.
+''' The game is to join 4 points in a grid using the fewest number of cells.
+    Example:
+             [' ' ' ' ' ' ' ' ' ' ' ' ' ']
+             [' ' 'O' ' ' ' ' ' ' ' ' ' ']
+             [' ' 'x' 'x' 'x' 'x' 'O' ' ']
+             [' ' ' ' ' ' 'x' ' ' ' ' ' ']
+             [' ' ' ' ' ' 'x' ' ' ' ' ' ']
+             [' ' ' ' ' ' 'x' ' ' ' ' ' ']
+             [' ' ' ' ' ' 'O' ' ' ' ' ' ']
+             [' ' 'O' 'x' 'x' ' ' ' ' ' ']
+             [' ' ' ' ' ' ' ' ' ' ' ' ' ']
 
-    Space state is represented by two variables:
+    where:
+    'O': points
+    'x': cells used to join the points
+    ' ': celss not used
+
+    Game source: https://twitter.com/TeoremaPi/status/1246159918832418816
+
+    How is it solved:
+
+    Short answer: applying reinforcement learning (specifically Value Iteration
+    algorithm).
+    
+    Long answer: modeling the game as a MDP (Markov Decision Process) and then 
+    applying a specific RL algorithm to this model.
+
+    MDP Space state is represented by two variables:
     - agent position (x,y) in the grid
     - number of red points not visited yet
 
-    Action space contais four actions
+    MDP Action space contains four actions
 
-    TODO: I don't know how to model inside the MPD the constraint of visiting
-          the minimum grid cells. 
-          This algorithm, applied to this problem, finds many optimal solutions
-          (optimal = minimum steps to visit all red pointso, which is not the same
-          as minimum number of grid cells visited).
-          The workaround is to review all optimal solutions found and then filter 
-          those visiting the minimum grid cells (this is why we need to find 
-          trajectories twice: first to find the minimun cells visited, and then to
-          filter out all longer solutions)
+    Note: designed MDP does not model exactly the game requirements. 
+          It focuses in minimizing the number of steps required to join all 4 
+          points sequentially (its purpose is not to reuse cells to go and come
+          back from a point in order to minimize the number of cells required
+          to join the 4 points).
 
-    The output consists of all optimal solutions to the problem
+    TODO: Reformulate MDP in order to take into account the number of cells
+          used in the solution.
+          
 
-    Note: It works under both python2 and python3
+    Once said that, the algorithm is able to find many optimal solutions from 
+    the point of view of the MDP perspective (the fewest steps to go from any
+    point to the other 3 ones).
+    Then, all solutions using the minimum number of cells are filetered and 
+    prompted to console.
+
+    Note: code compatible with python2 and python3
 '''
 
 # Grid size
 M,N = 7,9
 
-# Puntos (rojos)
-red_points = [[1,1],[5,2],[3,6],[1,7]]
-target_points = red_points[1:] # Let's assume we already are in the first point
+# Points
+game_points = [[1,1],[5,2],[3,6],[1,7]]
+target_points = game_points[1:] # Let's assume we start at the first game point
 K = len(target_points)
 
 # MDP state vars (MDP size = 7*9*8 = 504 estados)
@@ -117,7 +144,7 @@ def value_iteration(theta = 0.01, discount_factor=1):
                     if np.abs(V[x][y][z] - V_old[x][y][z]) > theta:
                         done = False
 
-    # Compute optimal policy
+    # Compute all optimal policies
     policy = np.zeros((M,N,1<<K), dtype=np.int8)
     policy = [[[0 for _ in range(1<<K)] for _ in range(N)] for _ in range(M)]
     for x in range(M):
@@ -131,24 +158,26 @@ def value_iteration(theta = 0.01, discount_factor=1):
                     (x_n,y_n),z_n = state
                     VA[a] = reward + discount_factor*V[x_n][y_n][z_n]
                 # The single optimal Value function, may result in one or several optimal policies
-                # Let's keep track of all possible policies
+                # Let's keep track of all them
                 policy[x][y][z] = np.argwhere(VA == np.amax(VA)).flatten().tolist()
 
     return V, policy
 
 def showPath(path):
+    ''' Show game solution '''
     grid = [[' ' for _ in range(M)] for _ in range(N)]
     for x,y in path:
         grid[y][x] = 'x'
 
-    for x,y in red_points:
+    for x,y in game_points:
         grid[y][x] = 'O'
 
-    for _ in range(2): print()
+    print('\n')
     for line in grid:
         print(np.array(line))
               
-def nextPathStep(path, local_pos, local_points_map, done, actionPath, action):
+def nextPathStep(path, local_pos, local_points_map, done, action):
+    ''' Find trajectories generated from all optimal policies '''
     global min_len
 
     if done:
@@ -160,37 +189,37 @@ def nextPathStep(path, local_pos, local_points_map, done, actionPath, action):
 
     else:
         path.append(pos)
-        actionPath.append(action)
         x,y = local_pos
         z   = local_points_map
         for action in policy[x][y][z]:
             reset(x,y,z)
             state, _, done = step(action)
             new_pos, new_points_map = state
-            nextPathStep(copy.copy(path), copy.copy(new_pos), new_points_map, done, copy.copy(actionPath), action)
+            nextPathStep(copy.copy(path), copy.copy(new_pos), new_points_map, done, action)
 
 
 if __name__ == "__main__":
+
+    # Find all optimal policies
     _, policy = value_iteration()
 
-    # Optimal policy for our algorithm means taking the minimum number of steps,
-    # regardless of whether the number of cells used is minimum or not.
-    # Let's check all optimal policies and choose the one minimizing this extra
+    # Remind that optimal policy, in this case, means taking the minimum number
+    # of steps to go from a point to the other three, regardless of whether the 
+    # number of different cells visited is minimum or not.
+    # Let's check all optimal policies and choose the ones minimizing this extra
     # constraint
-    # TODO: figure out how to add this constraint to the MDP itself
 
-    # First run to compute all min length paths
-    # Second run to show them
+    # Find and show solutions. Run it twice: first to find the minimum cells used
+    # over all solutions, and second to show only those meeting this constraing.
 
     show_len = 0
     for _ in range(2):
         # Init state
         points_map = 0x7
-        pos = red_points[0]
+        pos = game_points[0]
         path = []
-        actionPath = []
 
         min_len = 1000
-        nextPathStep(copy.copy(path), copy.copy(pos), points_map, False, copy.copy(actionPath), None)
+        nextPathStep(copy.copy(path), copy.copy(pos), points_map, False, None)
         show_len = min_len
 
