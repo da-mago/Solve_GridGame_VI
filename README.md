@@ -1,6 +1,6 @@
 # Introduction
 
-The game is to join 4 points in a grid using the fewest number of cells. Example:
+The game is to join four points in a grid using the fewest number of cells. Example:
 
              [' ' ' ' ' ' ' ' ' ' ' ' ' ']
              [' ' 'O' ' ' ' ' ' ' ' ' ' ']
@@ -57,7 +57,6 @@ Example:
              [' ' ' ' ' ' ' ' ' ' ' ' ' ']       [' ' ' ' ' ' ' ' ' ' ' ' ' ']
                          (a)                                  (b)
 
-Both 'a' and 'b' are valid MDP solutions, but only 'b' is valid solution to the game.
+Both 'a' and 'b' are valid MDP solutions, but only 'b' is a valid solution to the game.
 
-At the end, all MDP solutions are checked to filter the ones using the fewer number
-of cells and dump them to console.
+At the end, valid solutions for the game are filtered and dumped to console.
