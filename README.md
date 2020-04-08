@@ -45,6 +45,7 @@ the goal is met, a big reward is received.
 MDP solutions contain all paths starting from point 0 and meeting the goal of finding all 
 points, regardless the number of different cells visited (which is the game requirement).
 Example:
+
              [' ' ' ' ' ' ' ' ' ' ' ' ' ']       [' ' ' ' ' ' ' ' ' ' ' ' ' ']
              [' ' 'O' 'x' 'x' 'x' 'x' ' ']       [' ' 'O' 'x' 'x' ' ' ' ' ' ']
              [' ' ' ' ' ' 'x' 'x' 'O' ' ']       [' ' ' ' ' ' 'x' 'x' 'O' ' ']
